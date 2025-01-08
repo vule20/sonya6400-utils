@@ -1,7 +1,7 @@
 # sony2mov.py
 # Created on: 2025-01-03 20:00:33
 # Author: VuLe@macbook
-# Last updated: 2025-01-06 15:39:29
+# Last updated: 2025-01-08 14:16:17
 # Last modified by: VuLe@macbook
 
 import os
@@ -27,9 +27,11 @@ def extract_metadata_from_xml(xml_file):
     metadata["creation_time"] = creation_date
 
     device = root.find("ns:Device", ns)
+
     if device is not None:
-        metadata["model"] = device.get("modelName", "") + device.get("manufacturer", "")
-        metadata["lens"] = device.get("modelName", "") + device.get("manufacturer", "")
+        metadata["model"] = (
+            device.get("manufacturer", "") + " " + device.get("modelName", "")
+        )
 
     # Extract GPS data
     gps_group = root.find("ns:AcquisitionRecord/ns:Group[@name='ExifGPS']", ns)
@@ -88,7 +90,7 @@ def dms_to_dd(degrees, minutes, seconds, direction):
 def inject_metadata_to_video(video_file, metadata, output_file):
     """Inject metadata into a video file using ffmpeg."""
     # Construct the ffmpeg command with metadata
-    cmd = ["ffmpeg", "-i", video_file, "-map_metadata", "0", "-c", "copy"]
+    cmd = ["ffmpeg", "-y", "-i", video_file, "-map_metadata", "0", "-c", "copy"]
 
     # Add metadata fields to the ffmpeg command
     for key, value in metadata.items():
@@ -97,6 +99,7 @@ def inject_metadata_to_video(video_file, metadata, output_file):
 
     # Specify the output file
     cmd.append(output_file)
+    print(cmd)
 
     # Run the ffmpeg command
     subprocess.run(cmd, check=True)
@@ -144,21 +147,59 @@ def main(directory="./"):
         ):
             xml_files.append(full_path)
 
-    # copy video files to the output folder
-    os.makedirs("inserted_metadata_videos", exist_ok=True)
+    # copy video files to the output folder.
+    os.makedirs("work", exist_ok=True)
+    os.makedirs("mov", exist_ok=True)
 
     for xml_file in xml_files:
-        # video_file = xml_file.replace("M01.XML", ".MP4")
         video_file = (
             xml_file.replace("M01.xml", ".MP4")
             if "xml" in xml_file
             else xml_file.replace("M01.XML", ".MP4")
         )
-        output_file = os.path.join(
-            directory, "inserted_metadata_videos", os.path.basename(video_file)
+
+        print(f"processing {video_file}")
+        
+        # change the extension to .mov
+        mov_video_file = video_file.replace(
+            os.path.splitext(os.path.basename(video_file))[1], ".mov"
         )
 
-        insert_metadata_to_video(video_file, xml_file, output_file)
+        # work directory to perfom the conversion
+        mov_video_file = os.path.join(
+            directory, "work", os.path.basename(mov_video_file)
+        )
+
+        final_mov_video_file = os.path.join(
+            directory, "mov", os.path.basename(mov_video_file)
+        )
+
+        mov_cmd = [
+            "ffmpeg",
+            "-y",
+            "-i",
+            video_file,
+            "-c:v",
+            "libx265",
+            "-tag:v",
+            "hvc1",
+            "-c:a",
+            "aac",
+            "-map_metadata",
+            "0",
+            mov_video_file,
+        ]
+
+        # convert to mov
+        subprocess.run(mov_cmd, check=True)
+        # insert lens and camera model to mov
+        insert_metadata_to_video(mov_video_file, xml_file, final_mov_video_file)
+
+        try:
+            os.rmdir("work")
+            print("work folder has been removed.")
+        except OSError as e:
+            print(f"Error: {e}")
 
 
 if __name__ == "__main__":

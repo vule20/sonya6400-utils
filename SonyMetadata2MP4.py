@@ -1,7 +1,7 @@
 # sony2mov.py
 # Created on: 2025-01-03 20:00:33
 # Author: VuLe@macbook
-# Last updated: 2025-01-08 14:16:17
+# Last updated: 2025-01-06 15:39:29
 # Last modified by: VuLe@macbook
 
 import os
@@ -90,7 +90,7 @@ def dms_to_dd(degrees, minutes, seconds, direction):
 def inject_metadata_to_video(video_file, metadata, output_file):
     """Inject metadata into a video file using ffmpeg."""
     # Construct the ffmpeg command with metadata
-    cmd = ["ffmpeg", "-y", "-i", video_file, "-map_metadata", "0", "-c", "copy"]
+    cmd = ["ffmpeg", "-i", video_file, "-map_metadata", "0", "-c", "copy"]
 
     # Add metadata fields to the ffmpeg command
     for key, value in metadata.items():
@@ -99,7 +99,6 @@ def inject_metadata_to_video(video_file, metadata, output_file):
 
     # Specify the output file
     cmd.append(output_file)
-    print(cmd)
 
     # Run the ffmpeg command
     subprocess.run(cmd, check=True)
@@ -147,58 +146,21 @@ def main(directory="./"):
         ):
             xml_files.append(full_path)
 
-    # copy video files to the output folder.
-    os.makedirs("work", exist_ok=True)
+    # copy video files to the output folder
+    os.makedirs("inserted_metadata_videos", exist_ok=True)
 
-    # First, insert metadata to mp4
     for xml_file in xml_files:
+        # video_file = xml_file.replace("M01.XML", ".MP4")
         video_file = (
             xml_file.replace("M01.xml", ".MP4")
             if "xml" in xml_file
             else xml_file.replace("M01.XML", ".MP4")
         )
-        output_file = os.path.join(directory, "work", os.path.basename(video_file))
+        output_file = os.path.join(
+            directory, "inserted_metadata_videos", os.path.basename(video_file)
+        )
 
         insert_metadata_to_video(video_file, xml_file, output_file)
-
-    # Next, convert mp4 to mov and reinsert metadata. The camera model is not
-    # included with the MP4 container, and can be included with the MOV
-    # container. Not sure why
-
-    os.makedirs("mov", exist_ok=True)
-
-    for xml_file in xml_files:
-        video_file = (
-            xml_file.replace("M01.xml", ".MP4")
-            if "xml" in xml_file
-            else xml_file.replace("M01.XML", ".MP4")
-        )
-        mp4_video_file = os.path.join(directory, "work", os.path.basename(video_file))
-        mov_video_file = mp4_video_file.replace(".MP4", ".mov")
-        final_mov_video_file = os.path.join(
-            directory, "mov", os.path.basename(mov_video_file)
-        )
-
-        mov_cmd = [
-            "ffmpeg",
-            "-y",
-            "-i",
-            mp4_video_file,
-            "-c:v",
-            "libx265",
-            "-tag:v",
-            "hvc1",
-            "-c:a",
-            "aac",
-            "-map_metadata",
-            "0",
-            mov_video_file,
-        ]
-
-        # convert to mov
-        subprocess.run(mov_cmd, check=True)
-        # insert lens and camera model to mov
-        insert_metadata_to_video(mov_video_file, xml_file, final_mov_video_file)
 
 
 if __name__ == "__main__":
@@ -214,5 +176,3 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     main(args.directory)
-
-# "ffmpeg -i input_file.mp4 -acodec copy -vcodec copy output_file.mov"
