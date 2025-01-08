@@ -178,21 +178,23 @@ def main(directory="./"):
         final_mov_video_file = os.path.join(
             directory, "mov", os.path.basename(mov_video_file)
         )
+
         mov_cmd = [
             "ffmpeg",
             "-y",
             "-i",
             mp4_video_file,
-            "-acodec",
-            "copy",
-            "-vcodec",
-            "copy",
+            "-c:v",
+            "libx265",
+            "-tag:v",
+            "hvc1",
+            "-c:a",
+            "aac",
             "-map_metadata",
             "0",
-            "-c",
-            "copy",
             mov_video_file,
         ]
+
         # convert to mov
         subprocess.run(mov_cmd, check=True)
         # insert lens and camera model to mov
