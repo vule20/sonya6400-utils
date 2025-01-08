@@ -1,5 +1,3 @@
-# sonya6400-utils
-
 # Sony A6400 Video Metadata Insertion and Image Conversion Tool
 
 This repository provides a set of utilities for managing metadata and converting image and video files, specifically designed for users of the Sony A6400 camera. The tools allow for efficient handling of video metadata and image format conversions, making it easier to organize and store media for use with Apple’s Photos app.
