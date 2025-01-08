@@ -1,12 +1,12 @@
 #!/bin/bash
 
-mkdir -p heic_images # Create a folder named 'heic_files' for the converted images
+mkdir -p heic # Create a folder named 'heic_files' for the converted images
 
 echo "Convert all images to HEIC format..."
 for img in *.{jpg,png,bmp,jpeg,JPEG,JPG,PNG}; do
     if [ -f "$img" ]; then
         # Convert the image to HEIC format
-        sips -s format heic "$img" --out "heic_images/${img%.*}.heic"
+        sips -s format heic "$img" --out "heic/${img%.*}.heic"
     fi
 done
 
